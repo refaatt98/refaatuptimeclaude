@@ -104,8 +104,16 @@ async function verifyToken(token: string) {
   const res = await supabaseMgmt({
     data: { path: "/organizations", method: "GET", token },
   });
-  if (!res.ok) return { ok: false as const, message: describeMgmtError(res) };
-  return { ok: true as const, orgs: JSON.parse(res.body) as ApiOrg[] };
+  if (res.ok) return { ok: true as const, orgs: JSON.parse(res.body) as ApiOrg[] };
+  if (res.status !== 403) return { ok: false as const, message: describeMgmtError(res) };
+
+  // A token limited to specific projects cannot read organizations. Accept it
+  // as long as it can list projects, which is all the monitoring needs.
+  const projects = await supabaseMgmt({
+    data: { path: "/projects", method: "GET", token },
+  });
+  if (!projects.ok) return { ok: false as const, message: describeMgmtError(projects) };
+  return { ok: true as const, orgs: [] as ApiOrg[] };
 }
 
 export async function connectSupabaseAccount(input: { token: string; label?: string }) {
