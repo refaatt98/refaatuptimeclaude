@@ -7,14 +7,14 @@ import { notify, ntfyConfigured } from "../lib/uptime-core.mjs";
 
 export default async (request) => {
   if (request.method !== "POST") {
-    return Response.json({ ok: true, notifications: ntfyConfigured() });
+    return Response.json({ ok: true, notifications: await ntfyConfigured() });
   }
 
   if (new URL(request.url).searchParams.has("test")) {
-    if (!ntfyConfigured()) {
+    if (!await ntfyConfigured()) {
       return Response.json({
         ok: false,
-        message: "NTFY_TOPIC is not set in Netlify's environment variables yet.",
+        message: "No ntfy topic saved yet — tap the bell on the dashboard to add it.",
       });
     }
     const sent = await notify({

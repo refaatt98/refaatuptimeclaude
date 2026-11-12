@@ -101,6 +101,6 @@ export async function runAutoResume() {
   }
 
   summary.ok = summary.failed.length === 0 && summary.errors.length === 0;
-  summary.notifications = ntfyConfigured();
+  summary.notifications = await ntfyConfigured();
   return summary;
 }

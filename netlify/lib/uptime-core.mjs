@@ -93,12 +93,23 @@ export async function mgmt(path, token, method = "GET") {
 
 /* ------------------------------------------------------------------ ntfy */
 
-export function ntfyConfigured() {
-  return Boolean(process.env.NTFY_TOPIC);
+// The ntfy topic lives in the app's own database (app_keys, name "ntfy_topic"),
+// so it is not in the public repo. A NTFY_TOPIC env var still overrides it.
+let topicCache = null;
+async function ntfyTopic() {
+  if (process.env.NTFY_TOPIC) return process.env.NTFY_TOPIC;
+  if (topicCache) return topicCache;
+  const rows = await db("app_keys?select=value&name=eq.ntfy_topic").catch(() => null);
+  topicCache = rows?.[0]?.value?.trim() || null; // null is not cached: retried next time
+  return topicCache;
+}
+
+export async function ntfyConfigured() {
+  return Boolean(await ntfyTopic());
 }
 
 export async function notify({ title, message, tags = [], priority = 3 }) {
-  const topic = process.env.NTFY_TOPIC;
+  const topic = await ntfyTopic();
   if (!topic) return false;
   const server = (process.env.NTFY_SERVER ?? "https://ntfy.sh").replace(/\/$/, "");
   // JSON publishing goes to the server root; it allows non-ASCII titles.

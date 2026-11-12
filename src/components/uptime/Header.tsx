@@ -4,17 +4,44 @@ import { toast } from "sonner";
 import { useEffect, useState } from "react";
 
 import { useTheme } from "@/hooks/useTheme";
+import { supabase } from "@/integrations/supabase/client";
 import { relativeTime } from "@/lib/status";
 import { Button } from "@/components/ui/button";
 import logoAsset from "@/assets/refaat-uptime-logo.json";
 
-// Asks the auto-resume function to send a test push through ntfy.
+// Bell button: the first time, asks for the ntfy topic and saves it in the
+// app's database (app_keys → ntfy_topic); then sends a test push through
+// the auto-resume function.
 async function sendTestNotification() {
   try {
+    const { data } = await supabase
+      .from("app_keys")
+      .select("value")
+      .eq("name", "ntfy_topic")
+      .maybeSingle();
+
+    if (!data?.value) {
+      const topic = window
+        .prompt("Enter the ntfy topic you subscribed to in the ntfy app:")
+        ?.trim();
+      if (!topic) return;
+      if (!/^[A-Za-z0-9_-]{1,64}$/.test(topic)) {
+        toast.error("Invalid topic", {
+          description: "Use only letters, numbers, - and _ (no spaces).",
+        });
+        return;
+      }
+      const { error } = await supabase.from("app_keys").insert({ name: "ntfy_topic", value: topic });
+      if (error) {
+        toast.error("Could not save the topic", { description: error.message });
+        return;
+      }
+    }
+
     const res = await fetch("/api/auto-resume?test", { method: "POST" });
-    const data = (await res.json()) as { ok: boolean; message: string };
-    if (data.ok) toast.success(data.message);
-    else toast.error("Notification not sent", { description: data.message });
+    const result = (await res.json()) as { ok: boolean; message: string };
+    if (result.ok) toast.success(result.message);
+    else toast.error("Notification not sent", { description: result.message });
   } catch {
     toast.error("Notification not sent", {
       description: "The auto-resume function is not reachable on this deployment.",
