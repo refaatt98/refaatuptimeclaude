@@ -35,7 +35,7 @@ function supabaseManagementProxy(): Plugin {
           };
           const path = payload.path ?? "";
           const method = payload.method === "POST" ? "POST" : "GET";
-          const token = payload.token ?? "";
+          const token = String(payload.token ?? "").trim();
 
           if (!MANAGEMENT_PATH_RE.test(path) || token.length < 10) {
             response.statusCode = 400;
@@ -48,6 +48,7 @@ function supabaseManagementProxy(): Plugin {
             headers: {
               Authorization: `Bearer ${token}`,
               Accept: "application/json",
+              "User-Agent": "refaat-uptime/1.0 (+vite-dev)",
               ...(method === "POST" ? { "Content-Type": "application/json" } : {}),
             },
             ...(method === "POST" ? { body: payload.body ?? "{}" } : {}),

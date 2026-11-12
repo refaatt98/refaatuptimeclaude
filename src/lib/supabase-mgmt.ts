@@ -22,9 +22,22 @@ export async function supabaseMgmt({ data }: MgmtInput) {
     }),
   });
 
-  if (!res.ok && res.headers.get("content-type")?.includes("application/json") !== true) {
-    return { status: res.status, ok: false, body: await res.text() };
+  // Anything that is not the function's JSON envelope means the request never
+  // reached Supabase: the Netlify function is missing or the host blocked it.
+  if (res.headers.get("content-type")?.includes("application/json") !== true) {
+    return {
+      status: res.status,
+      ok: false,
+      body: await res.text(),
+      proxied: false,
+    };
   }
 
-  return (await res.json()) as { status: number; ok: boolean; body: string };
+  const json = (await res.json()) as {
+    status: number;
+    ok: boolean;
+    body: string;
+    proxied?: boolean;
+  };
+  return { ...json, proxied: json.proxied ?? true };
 }

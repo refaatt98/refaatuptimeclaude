@@ -5,6 +5,10 @@ const API = "https://api.supabase.com/v1";
 const PATH_RE = /^\/[A-Za-z0-9\-_/.]*$/;
 
 export default async (request) => {
+  // GET is a health check so the app can tell whether this function is deployed.
+  if (request.method === "GET") {
+    return Response.json({ proxy: "supabase-mgmt", ok: true });
+  }
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
@@ -18,7 +22,7 @@ export default async (request) => {
 
   const path = payload.path ?? "";
   const method = payload.method === "POST" ? "POST" : "GET";
-  const token = payload.token ?? "";
+  const token = String(payload.token ?? "").trim();
 
   if (!PATH_RE.test(path) || token.length < 10) {
     return Response.json({ status: 400, ok: false, body: "Invalid request" }, { status: 400 });
@@ -30,13 +34,16 @@ export default async (request) => {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/json",
+        // Supabase's edge (Cloudflare) can answer 403 to requests with no
+        // identifiable client, so always send an explicit User-Agent.
+        "User-Agent": "refaat-uptime/1.0 (+netlify-function)",
         ...(method === "POST" ? { "Content-Type": "application/json" } : {}),
       },
       ...(method === "POST" ? { body: payload.body ?? "{}" } : {}),
     });
 
     const text = await res.text();
-    return Response.json({ status: res.status, ok: res.ok, body: text });
+    return Response.json({ status: res.status, ok: res.ok, body: text, proxied: true });
   } catch (error) {
     return Response.json(
       {
@@ -49,4 +56,6 @@ export default async (request) => {
   }
 };
 
-export const config = { path: "/api/supabase-mgmt" };
+// No custom `config.path` here on purpose: a custom path makes the function
+// unreachable at /.netlify/functions/supabase-mgmt, which is exactly where the
+// /api/supabase-mgmt redirect in netlify.toml and dist/_redirects points.

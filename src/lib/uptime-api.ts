@@ -39,7 +39,7 @@ async function apiGet<T>(path: string, token: string): Promise<{ data: T | null;
   const started = Date.now();
   const res = await supabaseMgmt({ data: { path, method: "GET", token } });
   const ms = Date.now() - started;
-  if (!res.ok) throw new Error(`Supabase API ${path} failed (${res.status})`);
+  if (!res.ok) throw new Error(`Supabase API ${path} failed: ${describeMgmtError(res)}`);
   return { data: JSON.parse(res.body) as T, ms };
 }
 
@@ -82,19 +82,34 @@ export async function listConnectedAccounts(): Promise<ConnectedAccount[]> {
   }));
 }
 
+function supabaseMessage(body: string) {
+  try {
+    const parsed = JSON.parse(body) as { message?: string; error?: string };
+    return parsed.message ?? parsed.error ?? "";
+  } catch {
+    return body.trim().startsWith("<") ? "" : body.trim().slice(0, 200);
+  }
+}
+
+function describeMgmtError(res: { status: number; body: string; proxied?: boolean }) {
+  if (res.proxied === false) {
+    return `The app's Supabase proxy is not reachable (HTTP ${res.status}). Deploy the site from Git on Netlify so the "supabase-mgmt" function is included.`;
+  }
+  const detail = supabaseMessage(res.body);
+  if (res.status === 401) {
+    return "That access token was rejected by Supabase. Create a new one and try again.";
+  }
+  if (res.status === 403) {
+    return `Supabase refused access (403)${detail ? `: ${detail}` : ""}. Make sure you pasted a personal access token (starts with "sbp_") from supabase.com/dashboard/account/tokens, not a project API key.`;
+  }
+  return `Supabase rejected the request (${res.status})${detail ? `: ${detail}` : ""}.`;
+}
+
 async function verifyToken(token: string) {
   const res = await supabaseMgmt({
     data: { path: "/organizations", method: "GET", token },
   });
-  if (!res.ok) {
-    return {
-      ok: false as const,
-      message:
-        res.status === 401
-          ? "That access token was rejected by Supabase. Create a new one and try again."
-          : `Supabase rejected the request (${res.status}).`,
-    };
-  }
+  if (!res.ok) return { ok: false as const, message: describeMgmtError(res) };
   return { ok: true as const, orgs: JSON.parse(res.body) as ApiOrg[] };
 }
 
