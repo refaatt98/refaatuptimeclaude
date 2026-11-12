@@ -19,6 +19,12 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/push"
+  to = "/.netlify/functions/push"
+  status = 200
+  force = true
+
 # Single-page app: every remaining path serves index.html.
 [[redirects]]
   from = "/*"

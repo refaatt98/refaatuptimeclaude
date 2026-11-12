@@ -4,47 +4,20 @@ import { toast } from "sonner";
 import { useEffect, useState } from "react";
 
 import { useTheme } from "@/hooks/useTheme";
-import { supabase } from "@/integrations/supabase/client";
+import { enablePushNotifications } from "@/lib/web-push";
 import { relativeTime } from "@/lib/status";
 import { Button } from "@/components/ui/button";
 import logoAsset from "@/assets/refaat-uptime-logo.json";
 
-// Bell button: the first time, asks for the ntfy topic and saves it in the
-// app's database (app_keys → ntfy_topic); then sends a test push through
-// the auto-resume function.
+// Bell button: turns on Web Push for this device and sends a test notification.
 async function sendTestNotification() {
   try {
-    const { data } = await supabase
-      .from("app_keys")
-      .select("value")
-      .eq("name", "ntfy_topic")
-      .maybeSingle();
-
-    if (!data?.value) {
-      const topic = window
-        .prompt("Enter the ntfy topic you subscribed to in the ntfy app:")
-        ?.trim();
-      if (!topic) return;
-      if (!/^[A-Za-z0-9_-]{1,64}$/.test(topic)) {
-        toast.error("Invalid topic", {
-          description: "Use only letters, numbers, - and _ (no spaces).",
-        });
-        return;
-      }
-      const { error } = await supabase.from("app_keys").insert({ name: "ntfy_topic", value: topic });
-      if (error) {
-        toast.error("Could not save the topic", { description: error.message });
-        return;
-      }
-    }
-
-    const res = await fetch("/api/auto-resume?test", { method: "POST" });
-    const result = (await res.json()) as { ok: boolean; message: string };
+    const result = await enablePushNotifications();
     if (result.ok) toast.success(result.message);
-    else toast.error("Notification not sent", { description: result.message });
-  } catch {
-    toast.error("Notification not sent", {
-      description: "The auto-resume function is not reachable on this deployment.",
+    else toast.error("Notifications not enabled", { description: result.message });
+  } catch (error) {
+    toast.error("Notifications not enabled", {
+      description: error instanceof Error ? error.message : "Something went wrong.",
     });
   }
 }
@@ -102,8 +75,8 @@ export function Header({
             variant="outline"
             size="icon"
             onClick={() => void sendTestNotification()}
-            aria-label="Send test notification"
-            title="Send test notification"
+            aria-label="Enable notifications"
+            title="Enable notifications"
             className="rounded-full text-muted-foreground hover:text-foreground"
           >
             <Bell className="h-4 w-4" />

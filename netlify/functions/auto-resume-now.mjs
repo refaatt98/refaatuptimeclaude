@@ -14,7 +14,7 @@ export default async (request) => {
     if (!await ntfyConfigured()) {
       return Response.json({
         ok: false,
-        message: "No ntfy topic saved yet — tap the bell on the dashboard to add it.",
+        message: "Notifications are not set up yet — tap the bell on the dashboard.",
       });
     }
     const sent = await notify({

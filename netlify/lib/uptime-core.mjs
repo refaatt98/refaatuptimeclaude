@@ -1,3 +1,5 @@
+import { webPush, webPushCount } from "./web-push.mjs";
+
 // Shared server-side helpers for the Netlify functions: database access through
 // the public REST API, token decryption (same format as src/lib/token-crypto.ts),
 // the Supabase Management API and ntfy push notifications.
@@ -105,10 +107,21 @@ async function ntfyTopic() {
 }
 
 export async function ntfyConfigured() {
-  return Boolean(await ntfyTopic());
+  if (await ntfyTopic()) return true;
+  return (await webPushCount().catch(() => 0)) > 0;
 }
 
+// Sends to every channel: Web Push (installed PWA) and ntfy, if a topic is saved.
 export async function notify({ title, message, tags = [], priority = 3 }) {
+  const pushed = await webPush({ title, message }).catch((error) => {
+    console.log("web push error", error?.message);
+    return 0;
+  });
+  const viaNtfy = await sendNtfy({ title, message, tags, priority }).catch(() => false);
+  return pushed > 0 || viaNtfy;
+}
+
+async function sendNtfy({ title, message, tags, priority }) {
   const topic = await ntfyTopic();
   if (!topic) return false;
   const server = (process.env.NTFY_SERVER ?? "https://ntfy.sh").replace(/\/$/, "");

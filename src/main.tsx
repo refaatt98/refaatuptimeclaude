@@ -6,7 +6,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { Dashboard } from "@/pages/Dashboard";
 import { NotFound } from "@/pages/NotFound";
+import { registerServiceWorker } from "@/lib/web-push";
 import "@/styles.css";
+
+registerServiceWorker();
 
 const queryClient = new QueryClient();
 
