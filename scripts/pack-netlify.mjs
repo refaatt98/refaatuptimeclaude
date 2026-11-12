@@ -5,9 +5,11 @@ import { fileURLToPath, URL } from "node:url";
 
 const dist = fileURLToPath(new URL("../dist", import.meta.url));
 const functionsSrc = fileURLToPath(new URL("../netlify/functions", import.meta.url));
+const libSrc = fileURLToPath(new URL("../netlify/lib", import.meta.url));
 
 await mkdir(`${dist}/netlify/functions`, { recursive: true });
 await cp(functionsSrc, `${dist}/netlify/functions`, { recursive: true });
+await cp(libSrc, `${dist}/netlify/lib`, { recursive: true });
 
 await writeFile(
   `${dist}/netlify.toml`,
@@ -20,6 +22,6 @@ await writeFile(
 );
 
 // SPA fallback. /api/* is excluded so the function keeps handling it.
-await writeFile(`${dist}/_redirects`, `/api/*  /.netlify/functions/:splat  200\n/*  /index.html  200\n`);
+await writeFile(`${dist}/_redirects`, `/api/auto-resume  /.netlify/functions/auto-resume-now  200!\n/api/*  /.netlify/functions/:splat  200\n/*  /index.html  200\n`);
 
 console.log("dist/ packaged for Netlify (function + redirects included)");

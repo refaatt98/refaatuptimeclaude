@@ -1,11 +1,26 @@
 import { motion } from "motion/react";
-import { Moon, Plug, RefreshCw, Sun } from "lucide-react";
+import { Bell, Moon, Plug, RefreshCw, Sun } from "lucide-react";
+import { toast } from "sonner";
 import { useEffect, useState } from "react";
 
 import { useTheme } from "@/hooks/useTheme";
 import { relativeTime } from "@/lib/status";
 import { Button } from "@/components/ui/button";
 import logoAsset from "@/assets/refaat-uptime-logo.json";
+
+// Asks the auto-resume function to send a test push through ntfy.
+async function sendTestNotification() {
+  try {
+    const res = await fetch("/api/auto-resume?test", { method: "POST" });
+    const data = (await res.json()) as { ok: boolean; message: string };
+    if (data.ok) toast.success(data.message);
+    else toast.error("Notification not sent", { description: data.message });
+  } catch {
+    toast.error("Notification not sent", {
+      description: "The auto-resume function is not reachable on this deployment.",
+    });
+  }
+}
 
 export function Header({
   lastCheckedAt,
@@ -55,6 +70,16 @@ export function Header({
             className="rounded-full text-muted-foreground hover:text-foreground"
           >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => void sendTestNotification()}
+            aria-label="Send test notification"
+            title="Send test notification"
+            className="rounded-full text-muted-foreground hover:text-foreground"
+          >
+            <Bell className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"

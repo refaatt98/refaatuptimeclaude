@@ -13,6 +13,12 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/auto-resume"
+  to = "/.netlify/functions/auto-resume-now"
+  status = 200
+  force = true
+
 # Single-page app: every remaining path serves index.html.
 [[redirects]]
   from = "/*"

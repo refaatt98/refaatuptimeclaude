@@ -10,3 +10,4 @@
 - [x] Improve project cards and surrounding spacing for phone screens
 - [x] Verify removal persistence and the phone layout in the preview
 - [x] Add a Netlify production build target and deployment configuration
+- [x] Auto-resume paused projects every 5 minutes (Netlify scheduled function) with ntfy push notifications
