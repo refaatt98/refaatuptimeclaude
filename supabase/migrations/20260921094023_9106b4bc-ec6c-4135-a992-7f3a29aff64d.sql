@@ -1,0 +1,1 @@
+ALTER TABLE public.monitored_projects ADD COLUMN IF NOT EXISTS notes text;
