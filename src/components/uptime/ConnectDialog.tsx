@@ -114,6 +114,9 @@ export function ConnectDialog({
             >
               Open Supabase <ExternalLink className="h-3 w-3" />
             </a>
+            <span className="mt-1 block text-xs">
+              Give the token all permissions (read &amp; write).
+            </span>
           </li>
           <li>2. Copy it and paste it below — it is stored encrypted in your own Supabase project.</li>
         </ol>

@@ -95,14 +95,9 @@ function describeMgmtError(res: { status: number; body: string; proxied?: boolea
   if (res.proxied === false) {
     return `The app's Supabase proxy is not reachable (HTTP ${res.status}). Deploy the site from Git on Netlify so the "supabase-mgmt" function is included.`;
   }
+  // Show Supabase's own error text exactly as it sent it.
   const detail = supabaseMessage(res.body);
-  if (res.status === 401) {
-    return "That access token was rejected by Supabase. Create a new one and try again.";
-  }
-  if (res.status === 403) {
-    return `Supabase refused access (403)${detail ? `: ${detail}` : ""}. Make sure you pasted a personal access token (starts with "sbp_") from supabase.com/dashboard/account/tokens, not a project API key.`;
-  }
-  return `Supabase rejected the request (${res.status})${detail ? `: ${detail}` : ""}.`;
+  return detail ? `Supabase error (${res.status}): ${detail}` : `Supabase error (${res.status}).`;
 }
 
 async function verifyToken(token: string) {
